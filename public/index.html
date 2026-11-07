@@ -134,6 +134,9 @@ button{cursor:pointer;border:0;background:none}
 .toast.error{background:var(--bad)}
 .toast.success{background:var(--black);color:var(--gold)}
 
+.code-input{text-align:center;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.8rem!important;letter-spacing:.45em;padding-left:.45em!important}
+.verify-links{display:flex;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap}
+.link[disabled]{opacity:.5;cursor:default;text-decoration:none}
 @media (max-width:820px){
   .auth{grid-template-columns:1fr}
   .auth-hero{padding:30px 24px;gap:26px}
@@ -190,7 +193,8 @@ button{cursor:pointer;border:0;background:none}
     mode: "login",
     accounts: [],
     history: [],
-    loaded: false
+    loaded: false,
+    verify: null
   };
 
   function toast(msg, type) {
@@ -217,7 +221,9 @@ button{cursor:pointer;border:0;background:none}
             render();
             throw new Error("Your session ended. Please log in again.");
           }
-          throw new Error(data.message || data.error || ("Something went wrong (" + res.status + ")"));
+          var err = new Error(data.message || data.error || ("Something went wrong (" + res.status + ")"));
+          err.data = data;
+          throw err;
         }
         return data;
       });
@@ -252,8 +258,26 @@ button{cursor:pointer;border:0;background:none}
 
   var ICON_SWAP = '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>';
 
+  function renderVerifyCard() {
+    var v = state.verify || {};
+    return '' +
+      '<h2>Check your email</h2>' +
+      '<p class="sub">We sent a 6-digit code to <strong>' + esc(v.email) + '</strong>. Enter it below to finish signing up.</p>' +
+      '<form data-form="verify">' +
+        '<div class="field"><label for="code">Verification code</label>' +
+        '<input id="code" name="code" class="code-input" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="000000" required>' +
+        '<div class="hint" id="countdown"></div></div>' +
+        '<button class="btn btn-primary" type="submit">Verify email</button>' +
+      '</form>' +
+      '<div class="verify-links">' +
+        '<button class="link" id="resend" data-action="resend">Resend code</button>' +
+        '<button class="link" data-action="backToLogin">Use a different email</button>' +
+      '</div>';
+  }
+
   function renderAuth() {
     var login = state.mode === "login";
+    var verifying = state.mode === "verify";
     return '' +
     '<main class="auth">' +
       '<section class="auth-hero">' +
@@ -263,6 +287,7 @@ button{cursor:pointer;border:0;background:none}
         '<p style="margin:0;font-size:.85rem">Aurum is a student demo project. No real money is involved.</p>' +
       '</section>' +
       '<section class="auth-panel"><div class="auth-card">' +
+      (verifying ? renderVerifyCard() : (
         '<div class="switch">' +
           '<button class="' + (login ? "on" : "") + '" data-action="mode" data-mode="login">Log in</button>' +
           '<button class="' + (!login ? "on" : "") + '" data-action="mode" data-mode="register">Sign up</button>' +
@@ -275,7 +300,7 @@ button{cursor:pointer;border:0;background:none}
           '<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="6" autocomplete="' + (login ? "current-password" : "new-password") + '" required>' +
           (login ? '' : '<div class="hint">At least 6 characters.</div>') + '</div>' +
           '<button class="btn btn-primary" type="submit">' + (login ? "Log in" : "Sign up") + '</button>' +
-        '</form>' +
+        '</form>')) +
       '</div></section>' +
     '</main>';
   }
@@ -401,7 +426,45 @@ button{cursor:pointer;border:0;background:none}
 
   function render() {
     document.getElementById("app").innerHTML = state.token ? renderApp() : renderAuth();
+    if (!state.token && state.mode === "verify") {
+      tickVerify();
+      var codeInput = document.getElementById("code");
+      if (codeInput) codeInput.focus();
+    }
   }
+
+  /* ---------- verification timer ---------- */
+  function applyTimers(d) {
+    var v = state.verify;
+    if (!v) return;
+    v.expiresAt = Date.now() + (d.expiresInSeconds || 180) * 1000;
+    v.resendAt = Date.now() + (d.resendInSeconds || 30) * 1000;
+    tickVerify();
+  }
+
+  function tickVerify() {
+    var v = state.verify;
+    if (!v || state.token || state.mode !== "verify") return;
+    var c = document.getElementById("countdown");
+    var r = document.getElementById("resend");
+    if (c) {
+      if (v.expiresAt) {
+        var left = Math.max(0, Math.ceil((v.expiresAt - Date.now()) / 1000));
+        var m = Math.floor(left / 60), sec = String(left % 60).padStart(2, "0");
+        c.className = "hint" + (left === 0 ? " bad" : "");
+        c.textContent = left > 0 ? "The code expires in " + m + ":" + sec : "This code has expired. Request a new one.";
+      } else {
+        c.className = "hint";
+        c.textContent = "Check your email for the 6-digit code.";
+      }
+    }
+    if (r) {
+      var wait = Math.max(0, Math.ceil(((v.resendAt || 0) - Date.now()) / 1000));
+      r.disabled = wait > 0;
+      r.textContent = wait > 0 ? "Resend code in " + wait + "s" : "Resend code";
+    }
+  }
+  setInterval(tickVerify, 1000);
 
   /* ---------- modal ---------- */
   function confirmFlow(cfg) {
@@ -429,7 +492,21 @@ button{cursor:pointer;border:0;background:none}
 
   /* ---------- actions ---------- */
   var actions = {
-    mode: function (el) { state.mode = el.dataset.mode; render(); },
+    mode: function (el) { state.mode = el.dataset.mode; state.verify = null; render(); },
+    backToLogin: function () { state.mode = "register"; state.verify = null; render(); },
+    resend: function () {
+      var v = state.verify;
+      if (!v || Date.now() < (v.resendAt || 0)) return;
+      api("/auth/resend-code", { method: "POST", body: { email: v.email } }).then(function (d) {
+        applyTimers(d);
+        var input = document.getElementById("code");
+        if (input) { input.value = ""; input.focus(); }
+        toast("A new code is on its way", "success");
+      }).catch(function (e) {
+        if (e.data && e.data.retryAfter) { v.resendAt = Date.now() + e.data.retryAfter * 1000; tickVerify(); }
+        toast(e.message, "error");
+      });
+    },
     tab: function (el) { state.tab = el.dataset.tab; render(); window.scrollTo(0, 0); },
     logout: function () {
       api("/auth/logout", { method: "POST" }).catch(function () {}).then(function () {
@@ -459,13 +536,60 @@ button{cursor:pointer;border:0;background:none}
       if (!login) body.name = f.name.value.trim();
       var btn = form.querySelector("button[type=submit]");
       btn.disabled = true;
+
+      function startVerify(email, timers) {
+        state.verify = { email: email, expiresAt: 0, resendAt: 0 };
+        state.mode = "verify";
+        if (timers) { render(); applyTimers(timers); } else { render(); }
+      }
+
       api(login ? "/auth/login" : "/auth/register", { method: "POST", body: body }).then(function (d) {
+        if (d.needsVerification) {
+          startVerify(d.email, d);
+          toast("We sent a 6-digit code to " + d.email, "success");
+          return;
+        }
         saveSession(d.token, d.user);
         state.tab = "overview";
         render();
         toast("Welcome, " + d.user.name.split(" ")[0], "success");
         return refresh();
-      }).catch(function (e) { toast(e.message, "error"); btn.disabled = false; });
+      }).catch(function (e) {
+        btn.disabled = false;
+        // Logging in with an email that was never verified: send a fresh code
+        if (e.data && e.data.needsVerification) {
+          startVerify(e.data.email, null);
+          api("/auth/resend-code", { method: "POST", body: { email: e.data.email } }).then(function (d) {
+            applyTimers(d);
+            toast("Verify your email first. We sent a new code.", "success");
+          }).catch(function (err) {
+            if (err.data && err.data.retryAfter && state.verify) { state.verify.resendAt = Date.now() + err.data.retryAfter * 1000; tickVerify(); }
+            toast("Enter the code we emailed you, or request a new one.", "success");
+          });
+          return;
+        }
+        toast(e.message, "error");
+      });
+    },
+
+    verify: function (form) {
+      var v = state.verify;
+      if (!v) return;
+      var code = form.elements.code.value.trim();
+      if (!/^[0-9]{6}$/.test(code)) return toast("Enter the 6-digit code from your email", "error");
+      var btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      api("/auth/verify-email", { method: "POST", body: { email: v.email, code: code } }).then(function (d) {
+        saveSession(d.token, d.user);
+        state.verify = null; state.mode = "login"; state.tab = "overview";
+        render();
+        toast("Email verified. Welcome, " + d.user.name.split(" ")[0], "success");
+        return refresh();
+      }).catch(function (e) {
+        btn.disabled = false;
+        if (e.data && e.data.expired) { v.expiresAt = Date.now() - 1000; tickVerify(); }
+        toast(e.message, "error");
+      });
     },
 
     transfer: function (form) {
@@ -540,6 +664,10 @@ button{cursor:pointer;border:0;background:none}
   var lookupTimer;
   document.addEventListener("input", function (e) {
     var input = e.target;
+    if (input.name === "code" && input.classList && input.classList.contains("code-input")) {
+      input.value = input.value.replace(/[^0-9]/g, "").slice(0, 6);
+      return;
+    }
     if (!input.dataset || !input.dataset.lookup) return;
     clearTimeout(lookupTimer);
     var out = document.getElementById(input.dataset.lookup);

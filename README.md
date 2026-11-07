@@ -5,6 +5,8 @@ Balances are never stored. They are derived from immutable ledger entries.
 
 ## Features
 - JWT authentication (register, login, logout with token blacklist)
+- Email verification: a 6-digit code is emailed at sign-up and works for 3 minutes (5 attempts, resend after 30 seconds)
+- Email to both people whenever money is sent or received
 - Multiple accounts per user, balance derived from the ledger
 - Atomic transfers inside MongoDB sessions, with idempotency keys
 - System user endpoint for adding initial funds
@@ -20,7 +22,9 @@ Balances are never stored. They are derived from immutable ledger entries.
 ## API
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | /api/auth/register | Register a user | No |
+| POST | /api/auth/register | Register a user and email a 6-digit code | No |
+| POST | /api/auth/verify-email | Enter the code to finish sign-up | No |
+| POST | /api/auth/resend-code | Send a new code | No |
 | POST | /api/auth/login | Log in | No |
 | POST | /api/auth/logout | Log out (blacklists token) | Yes |
 | POST | /api/accounts | Create an account | Yes |

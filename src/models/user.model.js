@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema({
         minlength: [6, "Password must be at least 6 characters long"],
         select: false
     },
+    // New sign-ups start as false and become true after the email code is entered.
+    // There is NO default on purpose: older users without this field can still log in.
+    emailVerified: {
+        type: Boolean
+    },
     systemUser: {
         type: Boolean,
         default: false,

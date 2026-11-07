@@ -1,8 +1,63 @@
 const transactionModel = require('../models/transaction.model')
 const ledgerModel = require('../models/ledger.model')
 const accountModel = require('../models/account.model')
+const userModel = require('../models/user.model')
 const emailService = require('../services/email.service')
 const mongoose = require("mongoose")
+
+/**
+ * - Email both people after a transfer (runs in the background, never delays the response)
+ */
+async function notifyTransfer({ sender, toUserAccount, fromAccount, amount, transaction }) {
+    const receiver = await userModel.findById(toUserAccount.user)
+
+    const details = {
+        amount,
+        currency: toUserAccount.currency,
+        fromAccount,
+        toAccount: toUserAccount._id,
+        transactionId: transaction._id,
+        date: transaction.createdAt
+    }
+
+    // Money moved between two accounts of the same person: one email is enough
+    if (!receiver || String(receiver._id) === String(sender._id)) {
+        await emailService.sendTransferSentEmail(sender.email, sender.name, {
+            ...details,
+            toName: receiver ? "your other account" : "the recipient"
+        })
+        return
+    }
+
+    await Promise.all([
+        emailService.sendTransferSentEmail(sender.email, sender.name, {
+            ...details,
+            toName: receiver.name
+        }),
+        emailService.sendTransferReceivedEmail(receiver.email, receiver.name, {
+            ...details,
+            fromName: sender.name
+        })
+    ])
+}
+
+/**
+ * - Email the person who received system funds
+ */
+async function notifyFunding({ toUserAccount, amount, transaction }) {
+    const receiver = await userModel.findById(toUserAccount.user)
+
+    if (!receiver) return
+
+    await emailService.sendTransferReceivedEmail(receiver.email, receiver.name, {
+        amount,
+        currency: toUserAccount.currency,
+        fromName: "Aurum Bank",
+        toAccount: toUserAccount._id,
+        transactionId: transaction._id,
+        date: transaction.createdAt
+    })
+}
 
 /**
  * - Create a new transaction
@@ -163,9 +218,10 @@ async function createTransaction(req, res) {
     }
 
     /**
-     * 10. Send email notification
+     * 10. Send email notification to BOTH users (in the background)
      */
-    await emailService.sendTransactionEmail(req.user.email, req.user.name, amount, toAccount)
+    notifyTransfer({ sender: req.user, toUserAccount, fromAccount, amount, transaction })
+        .catch((err) => console.error("Transfer email error:", err.message))
 
     return res.status(201).json({
         message: "Transaction completed successfully",
@@ -315,6 +371,9 @@ async function createInitialFundsTransaction(req, res) {
     } finally {
         session.endSession()
     }
+
+    notifyFunding({ toUserAccount, amount, transaction })
+        .catch((err) => console.error("Funding email error:", err.message))
 
     return res.status(201).json({
         message: "Initial funds transaction completed successfully",
