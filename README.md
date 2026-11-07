@@ -1,19 +1,21 @@
-# Backend Ledger
+# Aurum Bank (Backend Ledger)
 
-A ledger-based banking backend built with Node.js, Express 5 and MongoDB (Mongoose). Balances are never stored. They are derived from immutable ledger entries.
+A ledger-based banking demo built with Node.js, Express 5, MongoDB (Mongoose) and a plain HTML/CSS/JS frontend.
+Balances are never stored. They are derived from immutable ledger entries.
 
 ## Features
 - JWT authentication (register, login, logout with token blacklist)
-- Multiple accounts per user, with balance derived from the ledger
-- Money transfers inside MongoDB sessions (atomic debit + credit)
-- Idempotency keys to prevent duplicate transfers
+- Multiple accounts per user, balance derived from the ledger
+- Atomic transfers inside MongoDB sessions, with idempotency keys
 - System user endpoint for adding initial funds
 - Email notifications via Nodemailer (Gmail OAuth2)
+- Aurum web app served from the same server (`public/index.html`)
 
 ## Setup
 1. `npm install`
-2. Create a `.env` file with: `MONGO_URI`, `JWT_SECRET`, `EMAIL_USER`, `CLIENT_ID`, `CLIENT_SECRET`, `REFRESH_TOKEN`
-3. `npm run dev` (server runs on port 3000)
+2. Fill in `.env`: `MONGO_URI`, `JWT_SECRET`, `CLIENT_ID`, `CLIENT_SECRET`, `REFRESH_TOKEN`, `EMAIL_USER`
+3. `npm run dev`
+4. Open http://localhost:3000
 
 ## API
 | Method | Endpoint | Description | Auth |
@@ -22,10 +24,9 @@ A ledger-based banking backend built with Node.js, Express 5 and MongoDB (Mongoo
 | POST | /api/auth/login | Log in | No |
 | POST | /api/auth/logout | Log out (blacklists token) | Yes |
 | POST | /api/accounts | Create an account | Yes |
-| GET | /api/accounts | List my accounts | Yes |
+| GET | /api/accounts | List my accounts with balances | Yes |
 | GET | /api/accounts/balance/:accountId | Get account balance | Yes |
+| GET | /api/accounts/lookup/:accountId | Find the owner name of an account | Yes |
 | POST | /api/transactions | Transfer between accounts | Yes |
+| GET | /api/transactions | My transaction history | Yes |
 | POST | /api/transactions/system/initial-funds | Add initial funds | System user |
-
-## Tech Stack
-Node.js, Express 5, MongoDB Atlas, Mongoose, JWT, bcryptjs, Nodemailer

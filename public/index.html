@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurum Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#ffc20e; --gold-deep:#e8a900; --gold-soft:#fff3c7;
+  --black:#000; --ink:#1c1b18; --muted:#6f6d65;
+  --page:#f1f1ee; --card:#fff; --line:#e4e3dd;
+  --ok:#17803f; --ok-bg:#e3f4e9; --bad:#b3261e; --bad-bg:#fbe7e5; --warn-bg:#fff0c2;
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink);min-height:100vh;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--black);outline-offset:2px}
+.hidden{display:none!important}
+
+/* ---------- brand ---------- */
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.35rem;letter-spacing:-.02em}
+.mark{width:36px;height:36px;border-radius:10px;background:var(--black);color:var(--gold);display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:999px;font-weight:700;transition:background .15s,transform .05s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--gold);color:var(--black)}
+.btn-primary:hover{background:var(--gold-deep)}
+.btn-dark{background:var(--black);color:#fff}
+.btn-dark:hover{background:#2b2a26}
+.btn-ghost{background:transparent;border:2px solid var(--black);color:var(--black)}
+.btn-ghost:hover{background:var(--black);color:var(--gold)}
+.btn-small{padding:8px 16px;font-size:.88rem}
+.btn[disabled]{opacity:.55;cursor:wait}
+
+/* ---------- auth ---------- */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.auth-hero{background:var(--gold);padding:44px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;position:relative;overflow:hidden}
+.auth-hero::after{content:"";position:absolute;inset:auto -120px -160px auto;width:420px;height:420px;border-radius:50%;border:56px solid rgba(0,0,0,.08)}
+.auth-hero h1{font-size:clamp(2.2rem,4.4vw,3.6rem);line-height:1.05;letter-spacing:-.035em;font-weight:800;max-width:11ch}
+.auth-hero p{max-width:38ch;font-size:1.05rem;margin-top:18px;color:#2a2200}
+.auth-panel{display:grid;place-items:center;padding:40px 24px}
+.auth-card{width:100%;max-width:410px}
+.auth-card h2{font-size:1.7rem;letter-spacing:-.02em;margin-bottom:6px}
+.auth-card .sub{color:var(--muted);margin-bottom:24px}
+.switch{display:flex;background:#e6e5df;border-radius:999px;padding:4px;margin-bottom:26px}
+.switch button{flex:1;padding:10px;border-radius:999px;font-weight:700;color:var(--muted)}
+.switch button.on{background:var(--black);color:var(--gold)}
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.field input,.field select{width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid var(--line);background:#fff;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--black);outline:none;box-shadow:0 0 0 3px var(--gold)}
+.field .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem}
+.hint{min-height:1.4em;margin-top:6px;font-size:.88rem;color:var(--muted)}
+.hint.ok{color:var(--ok);font-weight:600}
+.hint.bad{color:var(--bad);font-weight:600}
+.auth-card .btn{width:100%;margin-top:6px}
+
+/* ---------- app shell ---------- */
+.topbar{background:var(--gold);padding:14px 28px 0}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto}
+.who{display:flex;align-items:center;gap:14px;font-weight:600}
+.who span{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav{display:flex;gap:6px;max-width:1080px;margin:14px auto 0;overflow-x:auto}
+.nav button{padding:12px 20px;font-weight:700;border-radius:14px 14px 0 0;color:#3b3000;white-space:nowrap}
+.nav button:hover{background:rgba(0,0,0,.07)}
+.nav button.on{background:var(--page);color:var(--black)}
+.page{max-width:1080px;margin:0 auto;padding:28px 28px 80px}
+.page h2{font-size:1.5rem;letter-spacing:-.02em;margin-bottom:4px}
+.page .lead{color:var(--muted);margin-bottom:22px}
+
+/* ---------- overview ---------- */
+.top-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:34px}
+.balance{background:var(--black);color:#fff;border-radius:var(--radius);padding:30px 32px;position:relative;overflow:hidden;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,rgba(255,194,14,.13) 35px,rgba(255,194,14,.13) 36px)}
+.balance .cap{color:#cfcdc3;font-weight:500}
+.balance .big{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.03em;color:var(--gold);margin:6px 0 4px;word-break:break-word}
+.balance .small{color:#cfcdc3;font-size:.92rem}
+.actions{background:var(--card);border-radius:var(--radius);padding:24px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.actions h3{font-size:1.05rem;margin-bottom:2px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.section-head h3{font-size:1.2rem;letter-spacing:-.01em}
+.link{font-weight:700;text-decoration:underline;text-underline-offset:3px;font-size:.92rem}
+.list{background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:34px}
+.acct{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid var(--line)}
+.acct:last-child{border-bottom:0}
+.acct-name{font-weight:700}
+.acct-id{display:flex;align-items:center;gap:10px;margin-top:3px;color:var(--muted);font-size:.85rem}
+.acct-id code{font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+.copy{font-weight:700;color:var(--black);text-decoration:underline;text-underline-offset:3px;font-size:.82rem;white-space:nowrap}
+.acct-side{text-align:right;flex-shrink:0}
+.acct-bal{font-weight:800;font-size:1.25rem;letter-spacing:-.01em;margin-top:4px}
+.acct-bal.neg{color:var(--bad)}
+.pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:.78rem;font-weight:700;background:var(--ok-bg);color:var(--ok)}
+.pill.frozen,.pill.pending{background:var(--warn-bg);color:#7a5a00}
+.pill.closed,.pill.failed,.pill.reversed{background:var(--bad-bg);color:var(--bad)}
+.empty{padding:36px 24px;text-align:center;color:var(--muted)}
+.empty .btn{margin-top:14px}
+
+/* ---------- activity ---------- */
+.tx{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line)}
+.tx:last-child{border-bottom:0}
+.tx-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;background:var(--gold-soft)}
+.tx-icon svg{width:20px;height:20px}
+.tx-in .tx-icon{background:var(--ok-bg)}
+.tx-body{flex:1;min-width:0}
+.tx-title{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx-date{color:var(--muted);font-size:.85rem}
+.tx-amt{font-weight:800;white-space:nowrap}
+.tx-amt.in{color:var(--ok)}
+
+/* ---------- forms ---------- */
+.card{background:var(--card);border-radius:var(--radius);padding:28px;max-width:560px}
+.card .btn{width:100%;margin-top:6px}
+
+/* ---------- modal + toast ---------- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:#fff;border-radius:22px;padding:28px;width:100%;max-width:440px}
+.modal h3{font-size:1.3rem;margin-bottom:16px;letter-spacing:-.01em}
+.row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row span:first-child{color:var(--muted)}
+.row span:last-child{font-weight:700;text-align:right;word-break:break-word}
+.row.total span:last-child{font-size:1.25rem}
+.modal-actions{display:flex;gap:10px;margin-top:22px}
+.modal-actions .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;width:max-content;max-width:92vw}
+.toast{background:var(--black);color:#fff;padding:13px 20px;border-radius:14px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast.error{background:var(--bad)}
+.toast.success{background:var(--black);color:var(--gold)}
+
+@media (max-width:820px){
+  .auth{grid-template-columns:1fr}
+  .auth-hero{padding:30px 24px;gap:26px}
+  .top-grid{grid-template-columns:1fr}
+  .topbar{padding:12px 16px 0}
+  .page{padding:22px 16px 80px}
+  .acct{flex-direction:column;align-items:flex-start}
+  .acct-side{text-align:left}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  var API = "/api";
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  function parse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function money(n, cur) {
+    cur = cur || "USD";
+    try { return new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(n || 0); }
+    catch (e) { return cur + " " + (n || 0).toFixed(2); }
+  }
+  function fmtDate(d) {
+    return new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  function shortId(id) { return id ? id.slice(0, 4) + "..." + id.slice(-4) : ""; }
+  function cap(s) { s = String(s || "").toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function makeKey() {
+    if (window.crypto && crypto.randomUUID) return "aurum-" + crypto.randomUUID();
+    return "aurum-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+  }
+  function acctName(i) { return "Savings account" + (i ? " " + (i + 1) : ""); }
+
+  var state = {
+    token: store.get("aurum_token"),
+    user: parse(store.get("aurum_user")),
+    tab: "overview",
+    mode: "login",
+    accounts: [],
+    history: [],
+    loaded: false
+  };
+
+  function toast(msg, type) {
+    var el = document.createElement("div");
+    el.className = "toast " + (type || "");
+    el.textContent = msg;
+    document.getElementById("toast").appendChild(el);
+    setTimeout(function () { el.remove(); }, 4200);
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = { "Content-Type": "application/json" };
+    if (state.token) headers.Authorization = "Bearer " + state.token;
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          if (res.status === 401 && state.token) {
+            clearSession();
+            render();
+            throw new Error("Your session ended. Please log in again.");
+          }
+          throw new Error(data.message || data.error || ("Something went wrong (" + res.status + ")"));
+        }
+        return data;
+      });
+    });
+  }
+
+  function saveSession(token, user) {
+    state.token = token; state.user = user;
+    store.set("aurum_token", token);
+    store.set("aurum_user", JSON.stringify(user));
+  }
+  function clearSession() {
+    state.token = null; state.user = null; state.accounts = []; state.history = [];
+    state.loaded = false; state.tab = "overview";
+    store.del("aurum_token"); store.del("aurum_user");
+  }
+
+  function loadData() {
+    return Promise.all([api("/accounts"), api("/transactions")]).then(function (r) {
+      state.accounts = r[0].accounts || [];
+      state.history = r[1].transactions || [];
+      state.loaded = true;
+    });
+  }
+  function refresh() {
+    return loadData().catch(function (e) { if (state.token) toast(e.message, "error"); }).then(render);
+  }
+
+  /* ---------- views ---------- */
+  var ICON_OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+  var ICON_IN = '<svg viewBox="0 0 24 24" fill="none" stroke="#17803f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17M15 17H7V9"/></svg>';
+
+  var ICON_SWAP = '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>';
+
+  function renderAuth() {
+    var login = state.mode === "login";
+    return '' +
+    '<main class="auth">' +
+      '<section class="auth-hero">' +
+        '<div class="brand"><span class="mark">A</span><span>Aurum</span></div>' +
+        '<div><h1>Money that keeps its own books.</h1>' +
+        '<p>Every balance is worked out from an unchangeable ledger, so what you see is exactly what happened.</p></div>' +
+        '<p style="margin:0;font-size:.85rem">Aurum is a student demo project. No real money is involved.</p>' +
+      '</section>' +
+      '<section class="auth-panel"><div class="auth-card">' +
+        '<div class="switch">' +
+          '<button class="' + (login ? "on" : "") + '" data-action="mode" data-mode="login">Log in</button>' +
+          '<button class="' + (!login ? "on" : "") + '" data-action="mode" data-mode="register">Sign up</button>' +
+        '</div>' +
+        '<h2>' + (login ? "Welcome back" : "Create your profile") + '</h2>' +
+        '<p class="sub">' + (login ? "Log in to see your accounts." : "It takes less than a minute.") + '</p>' +
+        '<form data-form="auth">' +
+          (login ? '' : '<div class="field"><label for="name">Full name</label><input id="name" name="name" autocomplete="name" required></div>') +
+          '<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
+          '<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="6" autocomplete="' + (login ? "current-password" : "new-password") + '" required>' +
+          (login ? '' : '<div class="hint">At least 6 characters.</div>') + '</div>' +
+          '<button class="btn btn-primary" type="submit">' + (login ? "Log in" : "Sign up") + '</button>' +
+        '</form>' +
+      '</div></section>' +
+    '</main>';
+  }
+
+  function txRow(t, cur) {
+    var out = t.direction === "OUT";
+    var own = t.ownTransfer;
+    var title = own ? "Between your accounts" : (out ? "To " + t.toName : "From " + t.fromName);
+    var detail = fmtDate(t.createdAt);
+    if (own) detail += "  (..." + t.fromAccount.slice(-4) + " to ..." + t.toAccount.slice(-4) + ")";
+    var status = t.status !== "COMPLETED" ? ' <span class="pill ' + t.status.toLowerCase() + '">' + cap(t.status) + '</span>' : "";
+    var sign = own ? "" : (out ? "-" : "+");
+    var icon = own ? ICON_SWAP : (out ? ICON_OUT : ICON_IN);
+    return '<div class="tx ' + (own ? "" : (out ? "tx-out" : "tx-in")) + '">' +
+      '<div class="tx-icon">' + icon + '</div>' +
+      '<div class="tx-body"><div class="tx-title">' + esc(title) + status + '</div>' +
+      '<div class="tx-date">' + esc(detail) + '</div></div>' +
+      '<div class="tx-amt ' + (!own && !out ? "in" : "") + '">' + sign + money(t.amount, cur) + '</div>' +
+    '</div>';
+  }
+
+  function renderOverview() {
+    var cur = (state.accounts[0] && state.accounts[0].currency) || "USD";
+    var total = state.accounts.reduce(function (s, a) { return s + (a.balance || 0); }, 0);
+    var n = state.accounts.length;
+
+    var accts = n ? state.accounts.map(function (a, i) {
+      return '<div class="acct">' +
+        '<div><div class="acct-name">' + acctName(i) + '</div>' +
+        '<div class="acct-id"><code>' + esc(a._id) + '</code><button class="copy" data-action="copy" data-value="' + esc(a._id) + '">Copy ID</button></div></div>' +
+        '<div class="acct-side"><span class="pill ' + a.status.toLowerCase() + '">' + cap(a.status) + '</span>' +
+        '<div class="acct-bal ' + (a.balance < 0 ? "neg" : "") + '">' + money(a.balance, a.currency) + '</div></div>' +
+      '</div>';
+    }).join("") :
+      '<div class="empty"><p>You have no accounts yet. Open one to get started.</p>' +
+      '<button class="btn btn-primary" data-action="openAccount">Open your first account</button></div>';
+
+    var recent = state.history.slice(0, 5);
+    var recentHtml = recent.length ? recent.map(function (t) { return txRow(t, cur); }).join("") :
+      '<div class="empty">No transactions yet. Your transfers will appear here.</div>';
+
+    return '' +
+    '<h2>Hello, ' + esc((state.user && state.user.name || "").split(" ")[0]) + '</h2>' +
+    '<p class="lead">Here is where your money stands today.</p>' +
+    '<div class="top-grid">' +
+      '<div class="balance"><div class="cap">Total balance</div>' +
+        '<div class="big">' + money(total, cur) + '</div>' +
+        '<div class="small">Across ' + n + (n === 1 ? " account" : " accounts") + '</div></div>' +
+      '<div class="actions"><h3>What would you like to do?</h3>' +
+        '<button class="btn btn-primary" data-action="tab" data-tab="transfer">Transfer money</button>' +
+        '<button class="btn btn-ghost" data-action="openAccount">Open a new account</button></div>' +
+    '</div>' +
+    '<div class="section-head"><h3>Your accounts</h3></div>' +
+    '<div class="list">' + accts + '</div>' +
+    '<div class="section-head"><h3>Recent activity</h3>' +
+      (state.history.length > 5 ? '<button class="link" data-action="tab" data-tab="activity">See all</button>' : '') + '</div>' +
+    '<div class="list">' + recentHtml + '</div>';
+  }
+
+  function renderTransfer() {
+    var active = state.accounts.map(function (a, i) { return { a: a, i: i }; })
+      .filter(function (x) { return x.a.status === "ACTIVE"; });
+    if (!active.length) {
+      return '<h2>Transfer money</h2><p class="lead">Send money to any Aurum account.</p>' +
+        '<div class="list"><div class="empty"><p>You need an active account before you can send money.</p>' +
+        '<button class="btn btn-primary" data-action="openAccount">Open an account</button></div></div>';
+    }
+    var opts = active.map(function (x) {
+      return '<option value="' + esc(x.a._id) + '">' + acctName(x.i) + " (" + shortId(x.a._id) + ") - " + money(x.a.balance, x.a.currency) + '</option>';
+    }).join("");
+    return '<h2>Transfer money</h2><p class="lead">Send money to any Aurum account.</p>' +
+    '<div class="card"><form data-form="transfer">' +
+      '<div class="field"><label for="from">From</label><select id="from" name="from">' + opts + '</select></div>' +
+      '<div class="field"><label for="to">Recipient account ID</label>' +
+        '<input id="to" name="to" class="mono" data-lookup="rcpt-hint" placeholder="Paste the 24-character account ID" autocomplete="off" required>' +
+        '<div class="hint" id="rcpt-hint"></div></div>' +
+      '<div class="field"><label for="amount">Amount</label><input id="amount" name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required></div>' +
+      '<button class="btn btn-primary" type="submit">Review transfer</button>' +
+    '</form></div>';
+  }
+
+  function renderActivity() {
+    var cur = (state.accounts[0] && state.accounts[0].currency) || "USD";
+    return '<h2>Activity</h2><p class="lead">Your last 50 transactions.</p>' +
+      '<div class="list">' + (state.history.length ? state.history.map(function (t) { return txRow(t, cur); }).join("") :
+      '<div class="empty">No transactions yet. Your transfers will appear here.</div>') + '</div>';
+  }
+
+  function renderSystem() {
+    return '<h2>Fund an account</h2><p class="lead">System tools. Money is moved from your own system account, which can go negative.</p>' +
+    '<div class="card"><form data-form="fund">' +
+      '<div class="field"><label for="ftoAccount">Account to fund</label>' +
+        '<input id="ftoAccount" name="to" class="mono" data-lookup="fund-hint" placeholder="Paste the 24-character account ID" autocomplete="off" required>' +
+        '<div class="hint" id="fund-hint"></div></div>' +
+      '<div class="field"><label for="famount">Amount</label><input id="famount" name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required></div>' +
+      '<button class="btn btn-dark" type="submit">Add funds</button>' +
+    '</form></div>';
+  }
+
+  function renderApp() {
+    var tabs = [["overview", "Overview"], ["transfer", "Transfer"], ["activity", "Activity"]];
+    if (state.user && state.user.systemUser) tabs.push(["system", "Fund accounts"]);
+    var nav = tabs.map(function (t) {
+      return '<button class="' + (state.tab === t[0] ? "on" : "") + '" data-action="tab" data-tab="' + t[0] + '">' + t[1] + '</button>';
+    }).join("");
+
+    var body;
+    if (!state.loaded) body = '<p class="lead" style="margin-top:20px">Loading your accounts...</p>';
+    else if (state.tab === "transfer") body = renderTransfer();
+    else if (state.tab === "activity") body = renderActivity();
+    else if (state.tab === "system") body = renderSystem();
+    else body = renderOverview();
+
+    return '' +
+    '<header class="topbar">' +
+      '<div class="topbar-row"><div class="brand"><span class="mark">A</span><span>Aurum</span></div>' +
+      '<div class="who"><span>' + esc(state.user && state.user.name) + '</span>' +
+      '<button class="btn btn-dark btn-small" data-action="logout">Log out</button></div></div>' +
+      '<nav class="nav">' + nav + '</nav>' +
+    '</header>' +
+    '<main class="page">' + body + '</main>';
+  }
+
+  function render() {
+    document.getElementById("app").innerHTML = state.token ? renderApp() : renderAuth();
+  }
+
+  /* ---------- modal ---------- */
+  function confirmFlow(cfg) {
+    var rows = cfg.rows.map(function (r) {
+      return '<div class="row ' + (r[2] || "") + '"><span>' + esc(r[0]) + '</span><span>' + esc(r[1]) + '</span></div>';
+    }).join("");
+    var ov = document.createElement("div");
+    ov.className = "overlay";
+    ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><h3>' + esc(cfg.title) + '</h3>' + rows +
+      '<div class="modal-actions"><button class="btn btn-ghost" data-m="cancel">Cancel</button>' +
+      '<button class="btn btn-primary" data-m="ok">' + esc(cfg.confirm) + '</button></div></div>';
+    document.body.appendChild(ov);
+    var ok = ov.querySelector('[data-m="ok"]');
+    ok.focus();
+    ov.addEventListener("click", function (e) {
+      if (e.target === ov || e.target.dataset.m === "cancel") ov.remove();
+    });
+    ok.addEventListener("click", function () {
+      ok.disabled = true; ok.textContent = "Processing...";
+      cfg.run().then(function () { ov.remove(); }).catch(function (err) {
+        ov.remove(); toast(err.message, "error");
+      });
+    });
+  }
+
+  /* ---------- actions ---------- */
+  var actions = {
+    mode: function (el) { state.mode = el.dataset.mode; render(); },
+    tab: function (el) { state.tab = el.dataset.tab; render(); window.scrollTo(0, 0); },
+    logout: function () {
+      api("/auth/logout", { method: "POST" }).catch(function () {}).then(function () {
+        clearSession(); render(); toast("You have been logged out", "success");
+      });
+    },
+    openAccount: function () {
+      api("/accounts", { method: "POST" }).then(function () {
+        toast("New account opened", "success");
+        state.tab = "overview";
+        return refresh();
+      }).catch(function (e) { toast(e.message, "error"); });
+    },
+    copy: function (el) {
+      var v = el.dataset.value;
+      var done = function () { toast("Account ID copied", "success"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done, function () { toast("Could not copy. Select the ID and copy it manually.", "error"); });
+      else toast("Select the ID and copy it manually.", "error");
+    }
+  };
+
+  var forms = {
+    auth: function (form) {
+      var f = form.elements;
+      var login = state.mode === "login";
+      var body = { email: f.email.value.trim(), password: f.password.value };
+      if (!login) body.name = f.name.value.trim();
+      var btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      api(login ? "/auth/login" : "/auth/register", { method: "POST", body: body }).then(function (d) {
+        saveSession(d.token, d.user);
+        state.tab = "overview";
+        render();
+        toast("Welcome, " + d.user.name.split(" ")[0], "success");
+        return refresh();
+      }).catch(function (e) { toast(e.message, "error"); btn.disabled = false; });
+    },
+
+    transfer: function (form) {
+      var f = form.elements;
+      var from = f.from.value, to = f.to.value.trim();
+      var amount = Math.round(parseFloat(f.amount.value) * 100) / 100;
+      if (!(amount > 0)) return toast("Enter an amount greater than 0", "error");
+      if (from === to) return toast("Choose a different recipient account", "error");
+      var src = state.accounts.filter(function (a) { return a._id === from; })[0];
+      if (src && src.balance < amount) return toast("Not enough balance. Available: " + money(src.balance, src.currency), "error");
+
+      api("/accounts/lookup/" + to).then(function (rec) {
+        var key = makeKey();   // one key per review, so a double click can never send money twice
+        confirmFlow({
+          title: "Review your transfer",
+          confirm: "Confirm transfer",
+          rows: [
+            ["From", acctName(state.accounts.indexOf(src)) + " (" + shortId(from) + ")"],
+            ["To", rec.ownerName + " (" + shortId(to) + ")"],
+            ["Amount", money(amount, rec.currency), "total"]
+          ],
+          run: function () {
+            return api("/transactions", { method: "POST", body: { fromAccount: from, toAccount: to, amount: amount, idempotencyKey: key } })
+              .then(function (d) {
+                toast(d.message || "Transfer completed", "success");
+                state.tab = "overview";
+                return refresh();
+              });
+          }
+        });
+      }).catch(function (e) { toast(e.message, "error"); });
+    },
+
+    fund: function (form) {
+      var f = form.elements;
+      var to = f.to.value.trim();
+      var amount = Math.round(parseFloat(f.amount.value) * 100) / 100;
+      if (!(amount > 0)) return toast("Enter an amount greater than 0", "error");
+      api("/accounts/lookup/" + to).then(function (rec) {
+        var key = makeKey();
+        confirmFlow({
+          title: "Review funding",
+          confirm: "Add funds",
+          rows: [
+            ["Account holder", rec.ownerName],
+            ["Account", shortId(to)],
+            ["Amount", money(amount, rec.currency), "total"]
+          ],
+          run: function () {
+            return api("/transactions/system/initial-funds", { method: "POST", body: { toAccount: to, amount: amount, idempotencyKey: key } })
+              .then(function (d) {
+                toast(d.message || "Funds added", "success");
+                form.reset();
+                return refresh();
+              });
+          }
+        });
+      }).catch(function (e) { toast(e.message, "error"); });
+    }
+  };
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-action]");
+    if (el && actions[el.dataset.action]) actions[el.dataset.action](el);
+  });
+  document.addEventListener("submit", function (e) {
+    var h = forms[e.target.dataset.form];
+    if (h) { e.preventDefault(); h(e.target); }
+  });
+
+  var lookupTimer;
+  document.addEventListener("input", function (e) {
+    var input = e.target;
+    if (!input.dataset || !input.dataset.lookup) return;
+    clearTimeout(lookupTimer);
+    var out = document.getElementById(input.dataset.lookup);
+    var v = input.value.trim();
+    out.className = "hint";
+    if (!v) { out.textContent = ""; return; }
+    if (!/^[a-f0-9]{24}$/i.test(v)) { out.textContent = "An account ID has 24 characters."; return; }
+    out.textContent = "Checking...";
+    lookupTimer = setTimeout(function () {
+      api("/accounts/lookup/" + v).then(function (d) {
+        out.className = "hint ok";
+        out.textContent = "Account holder: " + d.ownerName + " (" + cap(d.status) + ")";
+      }).catch(function (err) {
+        out.className = "hint bad";
+        out.textContent = err.message;
+      });
+    }, 350);
+  });
+
+  /* ---------- start ---------- */
+  render();
+  if (state.token) refresh();
+})();
+</script>
+</body>
+</html>

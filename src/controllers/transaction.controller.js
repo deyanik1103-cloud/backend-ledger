@@ -37,6 +37,12 @@ async function createTransaction(req, res) {
         })
     }
 
+    if (String(fromAccount) === String(toAccount)) {
+        return res.status(400).json({
+            message: "You cannot transfer to the same account"
+        })
+    }
+
     const fromUserAccount = await accountModel.findById(fromAccount)
     const toUserAccount = await accountModel.findById(toAccount)
 
@@ -169,6 +175,51 @@ async function createTransaction(req, res) {
 
 
 /**
+ * - Transaction history of the logged-in user (last 50)
+ * - GET /api/transactions
+ */
+async function getTransactionHistory(req, res) {
+    const myAccounts = await accountModel.find({ user: req.user._id }).select("_id")
+    const myAccountIds = myAccounts.map(account => account._id)
+    const mine = new Set(myAccountIds.map(String))
+
+    const transactions = await transactionModel
+        .find({
+            $or: [
+                { fromAccount: { $in: myAccountIds } },
+                { toAccount: { $in: myAccountIds } }
+            ]
+        })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate({ path: "fromAccount", select: "user", populate: { path: "user", select: "name" } })
+        .populate({ path: "toAccount", select: "user", populate: { path: "user", select: "name" } })
+
+    const history = transactions.map((t) => {
+        const fromId = String(t.fromAccount?._id)
+        const toId = String(t.toAccount?._id)
+        const fromMine = mine.has(fromId)
+        const toMine = mine.has(toId)
+
+        return {
+            _id: t._id,
+            amount: t.amount,
+            status: t.status,
+            direction: fromMine ? "OUT" : "IN",
+            ownTransfer: fromMine && toMine,
+            fromAccount: fromId,
+            toAccount: toId,
+            fromName: t.fromAccount?.user?.name || "Unknown",
+            toName: t.toAccount?.user?.name || "Unknown",
+            createdAt: t.createdAt
+        }
+    })
+
+    return res.status(200).json({ transactions: history })
+}
+
+
+/**
  * - Create initial funds transaction from the system user
  * - POST /api/transactions/system/initial-funds
  */
@@ -201,7 +252,13 @@ async function createInitialFundsTransaction(req, res) {
 
     if (!fromUserAccount) {
         return res.status(400).json({
-            message: "System user account not found"
+            message: "System user account not found. Open an account for the system user first"
+        })
+    }
+
+    if (String(fromUserAccount._id) === String(toAccount)) {
+        return res.status(400).json({
+            message: "The system account cannot fund itself. Choose a different account"
         })
     }
 
@@ -267,5 +324,6 @@ async function createInitialFundsTransaction(req, res) {
 
 module.exports = {
     createTransaction,
+    getTransactionHistory,
     createInitialFundsTransaction
 }
